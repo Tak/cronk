@@ -1,4 +1,5 @@
 module Cronk
+  # A task containing an execution time, a rescheduling interval, and a block
   class Task
     attr_accessor :first
     attr_reader :interval
