@@ -8,10 +8,6 @@ RSpec.describe Cronk do
     expect(Cronk::VERSION).not_to be nil
   end
 
-  it "throws if interval is zero" do
-    expect { Cronk::Cronk.new.schedule(nil, Rational(0,24)) }.to raise_error(ArgumentError)
-  end
-
   it "throws if interval is negative" do
     expect { Cronk::Cronk.new.schedule(nil, Rational(-1,24)) }.to raise_error(ArgumentError)
   end
@@ -127,6 +123,19 @@ RSpec.describe Cronk do
     expect(third_then_second).to be >= second_then_first
     expect(second_then_first).to be >= first_then_third
     verify_queue_order(cronk)
+  end
+
+  it "schedules zero-interval tasks once per run" do
+    cronk = Cronk::Cronk.new
+    executed = 0
+    cronk.schedule(nil, 0) do
+      executed += 1
+    end
+
+    1.upto(10) do |i|
+      expect(cronk.run_tasks).to eq(1)
+      expect(executed).to eq(i)
+    end
   end
 
   def verify_queue_order(cronk)

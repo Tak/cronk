@@ -14,10 +14,7 @@ module Cronk
     # @param interval The repeat interval for the task (nil for one-time-only tasks)
     # @param block A block that will be invoked without arguments when the task executes
     def schedule(first, interval = nil, &block)
-      if interval
-        raise ArgumentError.new("Interval must be nonzero") if interval == 0
-        raise ArgumentError.new("Interval must be positive") if interval < 0
-      end
+      raise ArgumentError.new("Interval must be positive") if interval && interval < 0
 
       insert_task(Task.new(first || DateTime.now, interval, &block))
     end
