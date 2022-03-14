@@ -28,7 +28,7 @@ module Cronk
       if @queue.empty?
         @queue << task
       else
-        index = @queue.bsearch_index { |queued_task| task.first > queued_task.first } || -1
+        index = @queue.find_index { |queued_task| task.first > queued_task.first } || -1
         @queue.insert(index + 1, task)
       end
     end
@@ -52,8 +52,12 @@ module Cronk
     end
 
     def reschedule_tasks(tasks)
-      tasks.select { |task| task.interval }.each do |task|
-        task.first += task.interval while task.first < DateTime.now
+      now = DateTime.now
+      tasks.each do |task|
+        next unless task.interval
+
+        task.first += task.interval
+        task.first = now if task.first < now
         insert_task(task)
       end
     end

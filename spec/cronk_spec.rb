@@ -98,6 +98,7 @@ RSpec.describe Cronk do
       first = DateTime.now
     end
 
+    verify_queue_order(cronk)
     sleep(0.2)
     expect(cronk.run_tasks).to eq(3)
 
@@ -113,21 +114,24 @@ RSpec.describe Cronk do
     cronk.schedule(now + TEN_MS_IN_DAYS, TEN_MS_IN_DAYS) do
       second_then_first = DateTime.now
     end
-    cronk.schedule(now + (2 * TEN_MS_IN_DAYS), (2 *TEN_MS_IN_DAYS)) do
+    cronk.schedule(now + (2 * TEN_MS_IN_DAYS), ONE_SECOND_IN_DAYS) do
       third_then_second = DateTime.now
     end
-    cronk.schedule(now, (3 * TEN_MS_IN_DAYS)) do
+    cronk.schedule(now, 2 * ONE_SECOND_IN_DAYS) do
       first_then_third = DateTime.now
     end
 
+    verify_queue_order(cronk)
     sleep(0.2)
     expect(cronk.run_tasks).to eq(3)
     expect(third_then_second).to be >= second_then_first
     expect(second_then_first).to be >= first_then_third
+    verify_queue_order(cronk)
+  end
 
-    sleep(0.3)
-    expect(cronk.run_tasks).to eq(3)
-    expect(first_then_third).to be >= third_then_second
-    expect(third_then_second).to be >= second_then_first
+  def verify_queue_order(cronk)
+    cronk.instance_variable_get(:@queue).each_cons(2) do |pair|
+      expect(pair[1].first).to be >= pair[0].first
+    end
   end
 end
