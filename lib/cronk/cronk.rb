@@ -25,11 +25,11 @@ module Cronk
     # Insert a task into the queue at the appropriate place
     # @param task The task to insert
     def insert_task(task)
-      index = @queue.bsearch_index { |queued_task| task.first > queued_task.first }
-      if index
-        @queue.insert(index, task)
-      else
+      if @queue.empty?
         @queue << task
+      else
+        index = @queue.bsearch_index { |queued_task| task.first > queued_task.first } || -1
+        @queue.insert(index + 1, task)
       end
     end
     private :insert_task
@@ -47,22 +47,23 @@ module Cronk
         last_executed_index = index
       end
 
-      @queue.slice!(last_executed_index) if last_executed_index >= 0
+      reschedule_tasks(@queue.slice!(0..last_executed_index)) if last_executed_index >= 0
       last_executed_index + 1
     end
+
+    def reschedule_tasks(tasks)
+      tasks.select { |task| task.interval }.each do |task|
+        task.first += task.interval while task.first < DateTime.now
+        insert_task(task)
+      end
+    end
+    private :reschedule_tasks
 
     # Run a single task
     # If the task has a scheduling interval, reschedule it
     # @param task The task to run
     def run_task(task)
       task.block&.call
-
-      return unless task.interval
-
-      while task.first < DateTime.now
-        task.first += task.interval
-      end
-      insert_task(task)
     end
     private :run_task
   end

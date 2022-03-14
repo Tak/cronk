@@ -82,4 +82,52 @@ RSpec.describe Cronk do
     expect(cronk.run_tasks).to eq(0) # Running tasks should succeed, but have no effect
     expect(executed).to eq(1)
   end
+
+  it "orders tasks by execution time" do
+    cronk = Cronk::Cronk.new
+    first = second = third = nil
+    now = DateTime.now
+
+    cronk.schedule(now + TEN_MS_IN_DAYS, nil) do
+      second = DateTime.now
+    end
+    cronk.schedule(now + (2 * TEN_MS_IN_DAYS), nil) do
+      third = DateTime.now
+    end
+    cronk.schedule(now, nil) do
+      first = DateTime.now
+    end
+
+    sleep(0.2)
+    expect(cronk.run_tasks).to eq(3)
+
+    expect(third).to be >= second
+    expect(second).to be >= first
+  end
+
+  it "orders correctly when rescheduling" do
+    cronk = Cronk::Cronk.new
+    first_then_third = second_then_first = third_then_second = nil
+    now = DateTime.now
+
+    cronk.schedule(now + TEN_MS_IN_DAYS, TEN_MS_IN_DAYS) do
+      second_then_first = DateTime.now
+    end
+    cronk.schedule(now + (2 * TEN_MS_IN_DAYS), (2 *TEN_MS_IN_DAYS)) do
+      third_then_second = DateTime.now
+    end
+    cronk.schedule(now, (3 * TEN_MS_IN_DAYS)) do
+      first_then_third = DateTime.now
+    end
+
+    sleep(0.2)
+    expect(cronk.run_tasks).to eq(3)
+    expect(third_then_second).to be >= second_then_first
+    expect(second_then_first).to be >= first_then_third
+
+    sleep(0.3)
+    expect(cronk.run_tasks).to eq(3)
+    expect(first_then_third).to be >= third_then_second
+    expect(third_then_second).to be >= second_then_first
+  end
 end
